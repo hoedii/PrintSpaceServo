@@ -9,14 +9,15 @@
     background: #121212; 
     color: #e0e0e0; 
     padding: 20px; 
+    margin: 0;
   }
-  h1, h2 { text-align: center; }
+  h1, h2 { text-align: center; margin: 10px 0; }
   .groups, .servos { 
     display: flex; 
     flex-wrap: wrap; 
     gap: 10px; 
-    margin-bottom: 30px; 
     justify-content: center; 
+    margin-bottom: 30px;
   }
   .group, .servo { 
     background: #1e1e1e; 
@@ -55,10 +56,13 @@
     cursor: pointer; 
     margin-bottom: 20px; 
   }
+  #status { text-align:center; margin-bottom:20px; font-size:14px; color:#aaa; }
 </style>
 </head>
 <body>
 <h1>Servo Dashboard</h1>
+
+<div id="status">Verbindung: unbekannt</div>
 
 <div style="text-align:center;">
   <button id="addGroup">+ Gruppe hinzufügen</button>
@@ -69,8 +73,8 @@
 <h2>Servos</h2>
 <div class="servos" id="servos"></div>
 
-<script defer>
-// Dein Blynk Auth Token
+<script>
+// Blynk Auth Token
 const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
 
 let groups = ["A","B","C"];
@@ -83,6 +87,12 @@ let servos = [
   {name:"Servo 6", group:"C", state:0},
 ];
 
+// Statusanzeige
+function updateStatus(text){
+  document.getElementById('status').textContent = "Verbindung: " + text;
+}
+
+// ----------------- Gruppen rendern -----------------
 function renderGroups(){
   const container = document.getElementById('groups');
   container.innerHTML='';
@@ -91,7 +101,7 @@ function renderGroups(){
     div.className='group';
     div.innerHTML = `
       <h3>${g}</h3>
-      <button onclick="toggleGroup('${g}')" class="group-toggle">Ein/Aus</button>
+      <button onclick="toggleGroup('${g}')">Ein/Aus</button>
       <button onclick="tryRemoveGroup('${g}')" style="background:#f44336;color:white;margin-top:5px;">Löschen</button>
     `;
     container.appendChild(div);
@@ -130,6 +140,7 @@ document.getElementById('addGroup').addEventListener('click',()=>{
   }
 });
 
+// ----------------- Servos rendern -----------------
 function renderServos(){
   const container = document.getElementById('servos');
   container.innerHTML='';
@@ -149,6 +160,7 @@ function renderServos(){
   });
 }
 
+// ----------------- Servo Funktionen -----------------
 function rename(i,name){ servos[i].name=name; renderServos(); }
 function setGroup(i,g){ servos[i].group=g; renderServos(); }
 function toggle(i){
@@ -157,15 +169,20 @@ function toggle(i){
   sendCommand(i, servos[i].state);
 }
 
+// ----------------- Blynk Cloud -----------------
 function sendCommand(index,state){
   const vpin = "V" + (index+1);
   fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`, {mode:'no-cors'})
-    .catch(e=>console.warn("Blynk offline oder CORS blockiert"));
+    .then(()=> updateStatus("erfolgreich gesendet"))
+    .catch(e=> updateStatus("offline / Fehler"));
 }
 
-// Initial laden
-renderGroups();
-renderServos();
+// ----------------- Initial laden -----------------
+window.onload = function(){
+  renderGroups();
+  renderServos();
+  updateStatus("verbunden");
+};
 </script>
 </body>
 </html>
