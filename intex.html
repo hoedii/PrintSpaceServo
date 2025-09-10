@@ -74,9 +74,10 @@
 <div class="servos" id="servos"></div>
 
 <script>
-// Blynk Auth Token
+// === Blynk Auth Token ===
 const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
 
+// Gruppen & Servos
 let groups = ["A","B","C"];
 let servos = [
   {name:"Servo 1", group:"A", state:0},
@@ -92,7 +93,7 @@ function updateStatus(text){
   document.getElementById('status').textContent = "Verbindung: " + text;
 }
 
-// ----------------- Gruppen rendern -----------------
+// Gruppen rendern
 function renderGroups(){
   const container = document.getElementById('groups');
   container.innerHTML='';
@@ -140,7 +141,7 @@ document.getElementById('addGroup').addEventListener('click',()=>{
   }
 });
 
-// ----------------- Servos rendern -----------------
+// Servos rendern
 function renderServos(){
   const container = document.getElementById('servos');
   container.innerHTML='';
@@ -160,7 +161,7 @@ function renderServos(){
   });
 }
 
-// ----------------- Servo Funktionen -----------------
+// Servo-Funktionen
 function rename(i,name){ servos[i].name=name; renderServos(); }
 function setGroup(i,g){ servos[i].group=g; renderServos(); }
 function toggle(i){
@@ -169,7 +170,7 @@ function toggle(i){
   sendCommand(i, servos[i].state);
 }
 
-// ----------------- Blynk Cloud -----------------
+// Blynk Cloud
 function sendCommand(index,state){
   const vpin = "V" + (index+1);
   fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`, {mode:'no-cors'})
@@ -177,7 +178,7 @@ function sendCommand(index,state){
     .catch(e=> updateStatus("offline / Fehler"));
 }
 
-// ----------------- Initial laden -----------------
+// Initial laden
 window.onload = function(){
   renderGroups();
   renderServos();
