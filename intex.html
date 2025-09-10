@@ -9,13 +9,12 @@
     background: #121212; 
     color: #e0e0e0; 
     padding: 20px; 
-    margin: 0;
   }
-  h1, h2 { text-align: center; margin: 10px 0; }
+  h1, h2 { text-align: center; margin-bottom: 20px; }
   .groups, .servos { 
     display: flex; 
     flex-wrap: wrap; 
-    gap: 10px; 
+    gap: 15px; 
     justify-content: center; 
     margin-bottom: 30px;
   }
@@ -23,14 +22,14 @@
     background: #1e1e1e; 
     padding: 15px; 
     border-radius: 10px; 
-    box-shadow: 0 2px 6px rgba(0,0,0,0.7); 
     min-width: 150px; 
     text-align: center; 
+    box-shadow: 0 2px 6px rgba(0,0,0,0.7);
   }
   .group button, .servo button { 
-    margin-top: 5px; 
     width: 100%; 
     padding: 8px; 
+    margin-top: 5px; 
     border: none; 
     border-radius: 5px; 
     cursor: pointer; 
@@ -56,13 +55,10 @@
     cursor: pointer; 
     margin-bottom: 20px; 
   }
-  #status { text-align:center; margin-bottom:20px; font-size:14px; color:#aaa; }
 </style>
 </head>
 <body>
 <h1>Servo Dashboard</h1>
-
-<div id="status">Verbindung: unbekannt</div>
 
 <div style="text-align:center;">
   <button id="addGroup">+ Gruppe hinzufügen</button>
@@ -74,10 +70,9 @@
 <div class="servos" id="servos"></div>
 
 <script>
-// === Blynk Auth Token ===
-const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
+const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX"; // Dein Blynk Auth Token
 
-// Gruppen & Servos
+// Standardgruppen
 let groups = ["A","B","C"];
 let servos = [
   {name:"Servo 1", group:"A", state:0},
@@ -88,15 +83,10 @@ let servos = [
   {name:"Servo 6", group:"C", state:0},
 ];
 
-// Statusanzeige
-function updateStatus(text){
-  document.getElementById('status').textContent = "Verbindung: " + text;
-}
-
-// Gruppen rendern
+// ----------------- Gruppen rendern -----------------
 function renderGroups(){
   const container = document.getElementById('groups');
-  container.innerHTML='';
+  container.innerHTML = '';
   groups.forEach(g=>{
     const div = document.createElement('div');
     div.className='group';
@@ -110,17 +100,19 @@ function renderGroups(){
   renderServos();
 }
 
+// Gruppe schalten
 function toggleGroup(g){
   const groupServos = servos.filter(s=>s.group===g);
   const newState = groupServos.some(s=>s.state===0)?1:0;
   groupServos.forEach(s=>{
-    s.state=newState;
-    const i=servos.indexOf(s);
-    sendCommand(i,newState);
+    s.state = newState;
+    const i = servos.indexOf(s);
+    sendCommand(i, newState);
   });
   renderServos();
 }
 
+// Gruppe löschen
 function tryRemoveGroup(g){
   const groupServos = servos.filter(s=>s.group===g);
   if(groupServos.length > 0){
@@ -133,7 +125,8 @@ function tryRemoveGroup(g){
   }
 }
 
-document.getElementById('addGroup').addEventListener('click',()=>{
+// Neue Gruppe hinzufügen
+document.getElementById('addGroup').addEventListener('click', ()=>{
   const name = prompt("Gruppenname:");
   if(name && !groups.includes(name)){
     groups.push(name);
@@ -141,16 +134,16 @@ document.getElementById('addGroup').addEventListener('click',()=>{
   }
 });
 
-// Servos rendern
+// ----------------- Servos rendern -----------------
 function renderServos(){
   const container = document.getElementById('servos');
-  container.innerHTML='';
+  container.innerHTML = '';
   servos.forEach((s,i)=>{
     const div = document.createElement('div');
     div.className='servo';
     let groupOptions = `<option value="">Keine</option>`;
     groups.forEach(g=>{
-      groupOptions+=`<option value="${g}" ${s.group===g?"selected":""}>${g}</option>`;
+      groupOptions += `<option value="${g}" ${s.group===g?"selected":""}>${g}</option>`;
     });
     div.innerHTML = `
       <input type="text" value="${s.name}" onchange="rename(${i},this.value)">
@@ -161,29 +154,25 @@ function renderServos(){
   });
 }
 
-// Servo-Funktionen
-function rename(i,name){ servos[i].name=name; renderServos(); }
-function setGroup(i,g){ servos[i].group=g; renderServos(); }
+// ----------------- Funktionen für Servos -----------------
+function rename(i,name){ servos[i].name = name; renderServos(); }
+function setGroup(i,g){ servos[i].group = g; renderServos(); }
 function toggle(i){
-  servos[i].state = servos[i].state?0:1;
+  servos[i].state = servos[i].state ? 0 : 1;
   renderServos();
   sendCommand(i, servos[i].state);
 }
 
-// Blynk Cloud
+// ----------------- Blynk Cloud -----------------
 function sendCommand(index,state){
   const vpin = "V" + (index+1);
   fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`, {mode:'no-cors'})
-    .then(()=> updateStatus("erfolgreich gesendet"))
-    .catch(e=> updateStatus("offline / Fehler"));
+    .catch(e=>console.warn("Blynk offline oder CORS blockiert"));
 }
 
-// Initial laden
-window.onload = function(){
-  renderGroups();
-  renderServos();
-  updateStatus("verbunden");
-};
+// Initial render
+renderGroups();
+renderServos();
 </script>
 </body>
 </html>
