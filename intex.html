@@ -28,13 +28,12 @@
 <h2 style="text-align:center;">Servos</h2>
 <div class="servos" id="servos"></div>
 
-<script>
+<script defer>
 // Dein Blynk Auth Token
 const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
 
 // Standardgruppen
 let groups = ["A","B","C"];
-// 6 Servos mit Gruppenzuordnung
 let servos = [
   {name:"Servo 1", group:"A", state:0},
   {name:"Servo 2", group:"A", state:0},
@@ -120,17 +119,15 @@ function rename(i,name){ servos[i].name=name; renderServos(); }
 function setGroup(i,g){ servos[i].group=g; renderServos(); }
 function toggle(i){
   servos[i].state = servos[i].state?0:1;
-  sendCommand(i, servos[i].state);
-  renderServos();
+  renderServos(); // visuell sofort sichtbar, auch wenn offline
+  sendCommand(i, servos[i].state); // versucht Blynk zu schalten
 }
 
 // ----------------- Blynk Cloud Request -----------------
 function sendCommand(index,state){
-  const vpin = "V" + (index+1); // Servo i → Virtueller Pin V1..V6
-  fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`)
-    .then(res => res.text())
-    .then(data => console.log("Blynk Antwort:", data))
-    .catch(e=>console.error(e));
+  const vpin = "V" + (index+1);
+  fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`, {mode:'no-cors'})
+    .catch(e=>console.warn("Blynk offline oder CORS blockiert"));
 }
 
 // Initial laden
