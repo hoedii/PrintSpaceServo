@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Servo Dashboard</title>
+<style>
+  body { font-family: Arial; background: #f0f0f0; padding: 20px; }
+  h1 { text-align: center; margin-bottom: 20px; }
+  .groups, .servos { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 30px; }
+  .group, .servo { background: #fff; padding: 10px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .group { min-width: 150px; text-align: center; }
+  .group button, .servo button { margin-top: 5px; width: 100%; padding: 5px; border: none; border-radius: 5px; cursor: pointer; }
+  .on { background: #4caf50; color: white; }
+  .off { background: #f44336; color: white; }
+  input[type=text] { width: 100%; padding: 5px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 5px; }
+  select { width: 100%; padding: 5px; border-radius: 5px; border: 1px solid #ccc; }
+  #addGroup { padding: 5px 10px; border-radius: 5px; border: none; background: #2196f3; color: white; cursor: pointer; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<h1>Servo Dashboard</h1>
+
+<div>
+  <button id="addGroup">+ Gruppe hinzufügen</button>
+</div>
+
+<div class="groups" id="groups"></div>
+
+<h2>Servos</h2>
+<div class="servos" id="servos"></div>
+
+<script>
+let groups = ["A","B","C"];
+let servos = [
+  {name:"Servo 1", group:"A", state:0},
+  {name:"Servo 2", group:"A", state:0},
+  {name:"Servo 3", group:"B", state:0},
+  {name:"Servo 4", group:"B", state:0},
+  {name:"Servo 5", group:"C", state:0},
+  {name:"Servo 6", group:"C", state:0},
+];
+
+// Render Gruppen oben
+function renderGroups(){
+  const container = document.getElementById('groups');
+  container.innerHTML='';
+  groups.forEach(g=>{
+    const div = document.createElement('div');
+    div.className='group';
+    div.innerHTML = `
+      <h3>${g}</h3>
+      <button onclick="toggleGroup('${g}')" class="group-toggle">Ein/Aus</button>
+      <button onclick="tryRemoveGroup('${g}')" style="background:#f44336;color:white;margin-top:5px;">Löschen</button>
+    `;
+    container.appendChild(div);
+  });
+  renderServos(); // damit die Dropdowns der Servos aktualisiert werden
+}
+
+// Gruppen Ein/Aus schalten
+function toggleGroup(g){
+  const groupServos = servos.filter(s=>s.group===g);
+  const newState = groupServos.some(s=>s.state===0)?1:0;
+  groupServos.forEach(s=>{
+    s.state=newState;
+    const i=servos.indexOf(s);
+    sendCommand(i,newState);
+  });
+  renderServos();
+}
+
+// Sicheres Löschen der Gruppe
+function tryRemoveGroup(g){
+  const groupServos = servos.filter(s=>s.group===g);
+  if(groupServos.length > 0){
+    alert("Gruppe kann nicht gelöscht werden, solange Servos ihr zugeordnet sind!");
+    return;
+  }
+  if(confirm(`Gruppe "${g}" wirklich löschen?`)){
+    groups = groups.filter(x=>x!==g);
+    renderGroups();
+  }
+}
+
+// Neue Gruppe hinzufügen
+document.getElementById('addGroup').addEventListener('click',()=>{
+  const name = prompt("Gruppenname:");
+  if(name && !groups.includes(name)){
+    groups.push(name);
+    renderGroups();
+  }
+});
+
+// Render Servos unten
+function renderServos(){
+  const container = document.getElementById('servos');
+  container.innerHTML='';
+  servos.forEach((s,i)=>{
+    const div = document.createElement('div');
+    div.className='servo';
+    let groupOptions = `<option value="">Keine</option>`;
+    groups.forEach(g=>{
+      groupOptions+=`<option value="${g}" ${s.group===g?"selected":""}>${g}</option>`;
+    });
+    div.innerHTML = `
+      <input type="text" value="${s.name}" onchange="rename(${i},this.value)">
+      <select onchange="setGroup(${i},this.value)">${groupOptions}</select>
+      <button class="${s.state?'on':'off'}" onclick="toggle(${i})">${s.state?'Ein':'Aus'}</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// Servo Funktionen
+function rename(i,name){ servos[i].name=name; renderServos(); }
+function setGroup(i,g){ servos[i].group=g; renderServos(); }
+function toggle(i){
+  servos[i].state = servos[i].state?0:1;
+  sendCommand(i, servos[i].state);
+  renderServos();
+}
+
+// Dummy Funktion für D1 Mini (ersetze IP)
+function sendCommand(index,state){
+  fetch(`http://D1_MINI_IP/servo`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({index:index,state:state})
+  }).catch(e=>console.error(e));
+}
+
+// Initial render
+renderGroups();
+renderServos();
+</script>
+</body>
+</html>
