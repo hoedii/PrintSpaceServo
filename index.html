@@ -9,19 +9,19 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      background: #121212;   /* dunkelgrau */
-      color: #e0e0e0;        /* helle Schrift */
+      background: #121212;
+      color: #e0e0e0;
       font-size: 18px;
     }
     h1 {
       text-align: center;
       font-size: 28px;
-      color: #00bfff; /* hellblau für Obertitel */
+      color: #00bfff;
     }
     h2 {
       text-align: center;
       font-size: 24px;
-      color: #00bfff; /* hellblau für Untertitel */
+      color: #00bfff;
     }
     .status {
       text-align: center;
@@ -41,7 +41,7 @@
       margin-bottom: 30px;
     }
     .card {
-      background: #1e1e1e;   /* dunkle Karten */
+      background: #1e1e1e;
       border-radius: 16px;
       padding: 16px;
       text-align: center;
@@ -57,7 +57,7 @@
     .card h3 {
       margin: 0 0 12px;
       font-size: 22px;
-      color: #e0e0e0; /* Servonamen neutral weiß */
+      color: #e0e0e0;
     }
 
     .toggle {
@@ -85,7 +85,7 @@
       transition: .4s;
     }
     input:checked + .slider {
-      background-color: #4caf50; /* Aktiv grün */
+      background-color: #4caf50;
     }
     input:checked + .slider:before {
       transform: translateX(32px);
@@ -104,30 +104,15 @@
     <span id="status" class="status offline">Disconnected</span>
   </div>
 
-  <div class="grid">
-    <div class="card">
-      <img src="https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/s1_kobra_icon">
-      <h3>S1 Kobra</h3>
-      <label class="toggle">
-        <input type="checkbox" onchange="toggleMachine(0,this.checked)">
-        <div class="slider"></div>
-      </label>
-    </div>
-    <div class="card">
-      <img src="https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/h2s_icon">
-      <h3>H2S</h3>
-      <label class="toggle">
-        <input type="checkbox" onchange="toggleMachine(1,this.checked)">
-        <div class="slider"></div>
-      </label>
-    </div>
-  </div>
+  <div class="grid" id="machines"></div>
 
   <h2>Servos</h2>
   <div id="servos"></div>
 
   <script>
     const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
+
+    let togglesEnabled = false;
 
     let servos = [
       {name:"S1 Kobra", state:0},    // Servo 1
@@ -137,38 +122,59 @@
       {name:"ACE Pro 2", state:0},   // Servo 5
     ];
 
-    function renderServos(){
-      const container = document.getElementById('servos');
-      container.innerHTML = '';
-      servos.forEach((s,i)=>{
-        const div = document.createElement('div');
+    function renderMachines(){
+      const machines = [
+        {name:"S1 Kobra", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/s1_kobra_icon"},
+        {name:"H2S", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/h2s_icon"}
+      ];
+      const container = document.getElementById("machines");
+      container.innerHTML = "";
+      machines.forEach((m,idx)=>{
+        const div = document.createElement("div");
         div.className = "card";
         div.innerHTML = `
-          <h3>${s.name}</h3>
+          <img src="${m.img}">
+          <h3>${m.name}</h3>
           <label class="toggle">
-            <input type="checkbox" ${s.state?"checked":""} onchange="toggleServo(${i},this.checked)">
+            <input type="checkbox" ${!togglesEnabled?"disabled":""} onchange="toggleMachine(${idx},this.checked)">
             <div class="slider"></div>
           </label>
         `;
         container.appendChild(div);
       });
+      syncMachineStates();
+    }
 
-      // Maschinen-Buttons synchronisieren
-      document.querySelectorAll(".grid .card input").forEach((el, idx)=>{
-        if(idx===0){ // S1 Kobra Gruppe
-          const allOn = servos[0].state && servos[2].state && servos[4].state; 
-          el.checked = allOn;
-        }
-        if(idx===1){ // H2S Gruppe
-          const allOn = servos[1].state && servos[3].state;
-          el.checked = allOn;
-        }
+    function renderServos(){
+      const container = document.getElementById("servos");
+      container.innerHTML = "";
+      servos.forEach((s,i)=>{
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <h3>${s.name}</h3>
+          <label class="toggle">
+            <input type="checkbox" ${s.state?"checked":""} ${!togglesEnabled?"disabled":""} onchange="toggleServo(${i},this.checked)">
+            <div class="slider"></div>
+          </label>
+        `;
+        container.appendChild(div);
       });
+      syncMachineStates();
+    }
+
+    function syncMachineStates(){
+      const machineInputs = document.querySelectorAll("#machines input");
+      if(machineInputs.length >= 2){
+        machineInputs[0].checked = servos[0].state && servos[2].state && servos[4].state;
+        machineInputs[1].checked = servos[1].state && servos[3].state;
+      }
     }
 
     function toggleServo(i,state){
       servos[i].state = state?1:0;
       sendCommand("V"+(i+1), servos[i].state);
+      syncMachineStates();
     }
 
     function toggleMachine(index,state){
@@ -187,9 +193,9 @@
     }
 
     function setTogglesEnabled(enabled){
-      document.querySelectorAll("input[type=checkbox]").forEach(el=>{
-        el.disabled = !enabled;
-      });
+      togglesEnabled = enabled;
+      renderMachines();
+      renderServos();
     }
 
     function syncFromBlynk(){
@@ -229,6 +235,7 @@
       }
     }
 
+    renderMachines();
     renderServos();
     syncFromBlynk();
     setInterval(syncFromBlynk,2000);
