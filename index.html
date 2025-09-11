@@ -21,9 +21,9 @@
   .slider:before { position: absolute; content: ""; height: 30px; width: 30px; left: 4px; bottom: 4px; background-color: white; border-radius: 50%; transition: .4s; }
   input:checked + .slider { background-color: #4caf50; }
   input:checked + .slider:before { transform: translateX(32px); }
+  input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
   #servos { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-  /* Reload Button oben rechts */
   #refreshBtn {
     position: absolute;
     top: 10px;
@@ -53,139 +53,137 @@
   <div id="servos"></div>
 
 <script>
-  const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
-  let togglesEnabled = false;
+const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
+let connected = false;
 
-  let servos = [
-    {name:"S1 Kobra", state:0},
-    {name:"H2S", state:0},
-    {name:"ACE Pro 1", state:0},
-    {name:"AMS", state:0},
-    {name:"ACE Pro 2", state:0},
+let servos = [
+  {name:"S1 Kobra", state:0},
+  {name:"H2S", state:0},
+  {name:"ACE Pro 1", state:0},
+  {name:"AMS", state:0},
+  {name:"ACE Pro 2", state:0},
+];
+
+function renderMachines(){
+  const machines = [
+    {name:"S1 Kobra", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/s1_kobra_icon"},
+    {name:"H2S", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/h2s_icon"}
   ];
+  const container = document.getElementById("machines");
+  container.innerHTML = "";
+  machines.forEach((m,idx)=>{
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <img src="${m.img}">
+      <h3>${m.name}</h3>
+      <label class="toggle">
+        <input type="checkbox" ${!connected ? "disabled" : ""} onchange="toggleMachine(${idx}, this.checked)">
+        <div class="slider"></div>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+  syncMachineStates();
+}
 
-  function renderMachines(){
-    const machines = [
-      {name:"S1 Kobra", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/s1_kobra_icon"},
-      {name:"H2S", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/h2s_icon"}
-    ];
-    const container = document.getElementById("machines");
-    container.innerHTML = "";
-    machines.forEach((m,idx)=>{
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <img src="${m.img}">
-        <h3>${m.name}</h3>
-        <label class="toggle">
-          <input type="checkbox" ${!togglesEnabled?"disabled":""} onchange="toggleMachine(${idx},this.checked)">
-          <div class="slider"></div>
-        </label>
-      `;
-      container.appendChild(div);
-    });
-    syncMachineStates();
+function renderServos(){
+  const container = document.getElementById("servos");
+  container.innerHTML = "";
+  servos.forEach((s,i)=>{
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <h3>${s.name}</h3>
+      <label class="toggle">
+        <input type="checkbox" ${s.state?"checked":""} ${!connected ? "disabled":""} onchange="toggleServo(${i}, this.checked)">
+        <div class="slider"></div>
+      </label>
+    `;
+    container.appendChild(div);
+  });
+  syncMachineStates();
+}
+
+function syncMachineStates(){
+  const machineInputs = document.querySelectorAll("#machines input");
+  if(machineInputs.length >= 2){
+    machineInputs[0].checked = servos[0].state && servos[2].state && servos[4].state;
+    machineInputs[1].checked = servos[1].state && servos[3].state;
   }
+}
 
-  function renderServos(){
-    const container = document.getElementById("servos");
-    container.innerHTML = "";
-    servos.forEach((s,i)=>{
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <h3>${s.name}</h3>
-        <label class="toggle">
-          <input type="checkbox" ${s.state?"checked":""} ${!togglesEnabled?"disabled":""} onchange="toggleServo(${i},this.checked)">
-          <div class="slider"></div>
-        </label>
-      `;
-      container.appendChild(div);
-    });
-    syncMachineStates();
-  }
+function toggleServo(i,state){
+  servos[i].state = state?1:0;
+  sendCommand("V"+(i+1), servos[i].state);
+  syncMachineStates();
+}
 
-  function syncMachineStates(){
-    const machineInputs = document.querySelectorAll("#machines input");
-    if(machineInputs.length >= 2){
-      machineInputs[0].checked = servos[0].state && servos[2].state && servos[4].state;
-      machineInputs[1].checked = servos[1].state && servos[3].state;
-    }
-  }
-
-  function toggleServo(i,state){
+function toggleMachine(index,state){
+  let range = (index===0)?[0,2,4]:[1,3];
+  range.forEach(i=>{
     servos[i].state = state?1:0;
     sendCommand("V"+(i+1), servos[i].state);
-    syncMachineStates();
-  }
+  });
+  renderServos();
+}
 
-  function toggleMachine(index,state){
-    let range = (index===0)?[0,2,4]:[1,3];
-    range.forEach(i=>{
-      servos[i].state = state?1:0;
-      sendCommand("V"+(i+1), servos[i].state);
-    });
-    renderServos();
-  }
+function sendCommand(vpin,state){
+  fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`,{mode:"no-cors"});
+}
 
-  function sendCommand(vpin,state){
-    fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`,{mode:"no-cors"});
-  }
+function manualRefresh(){
+  fetchStatus();
+  fetchServoPositions();
+}
 
-  function setTogglesEnabled(enabled){
-    togglesEnabled = enabled;
-    renderMachines();
-    renderServos();
-  }
-
-  function manualRefresh(){
-    fetchStatus();
-    fetchServoPositions();
-  }
-
-  function fetchStatus(){
-    fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${token}`)
-      .then(r=>r.text())
-      .then(t=>{
-        const status = document.getElementById("status");
-        if(t==="true"){ 
-          status.textContent = "Connected";
-          status.className = "status online";
-          setTogglesEnabled(true);
-        } else {
-          status.textContent = "Disconnected";
-          status.className = "status offline";
-          setTogglesEnabled(false);
-        }
-      })
-      .catch(()=>{
-        const status = document.getElementById("status");
+function fetchStatus(){
+  fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${token}`)
+    .then(r=>r.text())
+    .then(t=>{
+      const status = document.getElementById("status");
+      if(t==="true"){
+        status.textContent = "Connected";
+        status.className = "status online";
+        connected = true;
+      } else {
         status.textContent = "Disconnected";
         status.className = "status offline";
-        setTogglesEnabled(false);
-      });
+        connected = false;
+      }
+      renderMachines();
+      renderServos();
+    })
+    .catch(()=>{
+      const status = document.getElementById("status");
+      status.textContent = "Disconnected";
+      status.className = "status offline";
+      connected = false;
+      renderMachines();
+      renderServos();
+    });
+}
+
+function fetchServoPositions(){
+  for(let i=1;i<=5;i++){
+    fetch(`https://blynk.cloud/external/api/get?token=${token}&V${i}`)
+      .then(res=>res.text())
+      .then(val=>{
+        const state = parseInt(val);
+        if(!isNaN(state)){
+          servos[i-1].state = state;
+          renderServos();
+        }
+      })
+      .catch(()=>{});
   }
+}
 
-  function fetchServoPositions(){
-    for(let i=1;i<=5;i++){
-      fetch(`https://blynk.cloud/external/api/get?token=${token}&V${i}`)
-        .then(res=>res.text())
-        .then(val=>{
-          const state = parseInt(val);
-          if(!isNaN(state)){
-            servos[i-1].state = state;
-            renderServos();
-          }
-        })
-        .catch(()=>{});
-    }
-  }
-
-  renderMachines();
-  renderServos();
-  fetchServoPositions(); // initial einmal laden
-  fetchStatus();        // initial einmal laden
-
+// Initial Render
+renderMachines();
+renderServos();
+fetchServoPositions();
+fetchStatus();
 </script>
 </body>
 </html>
