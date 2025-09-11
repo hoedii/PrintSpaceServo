@@ -178,9 +178,7 @@
     }
 
     function toggleMachine(index,state){
-      let range = [];
-      if(index===0) range = [0,2,4]; // S1 Kobra Gruppe
-      else range = [1,3];            // H2S Gruppe
+      let range = (index===0)?[0,2,4]:[1,3];
       range.forEach(i=>{
         servos[i].state = state?1:0;
         sendCommand("V"+(i+1), servos[i].state);
@@ -198,6 +196,23 @@
       renderServos();
     }
 
+    // einmalig beim Laden alle Servo-Werte holen
+    function loadInitialStates(){
+      for(let i=1;i<=5;i++){
+        fetch(`https://blynk.cloud/external/api/get?token=${token}&V${i}`)
+          .then(res=>res.text())
+          .then(val=>{
+            const state = parseInt(val);
+            if(!isNaN(state)){
+              servos[i-1].state = state;
+              renderServos();
+            }
+          })
+          .catch(()=>{});
+      }
+    }
+
+    // nur alle 3 Minuten Verbindungsstatus prüfen
     function syncFromBlynk(){
       fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${token}`)
         .then(r=>r.text())
@@ -219,27 +234,13 @@
           status.className = "status offline";
           setTogglesEnabled(false);
         });
-
-      // Servos abfragen
-      for(let i=1;i<=5;i++){
-        fetch(`https://blynk.cloud/external/api/get?token=${token}&V${i}`)
-          .then(res=>res.text())
-          .then(val=>{
-            const state = parseInt(val);
-            if(!isNaN(state)){
-              servos[i-1].state = state;
-              renderServos();
-            }
-          })
-          .catch(()=>{});
-      }
     }
 
     renderMachines();
     renderServos();
+    loadInitialStates();
     syncFromBlynk();
-    setInterval(syncFromBlynk,180000);
+    setInterval(syncFromBlynk, 180000); // alle 3 Minuten
   </script>
 </body>
 </html>
-
