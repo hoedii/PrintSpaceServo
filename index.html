@@ -1,105 +1,48 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Power Management</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #121212;
-      color: #e0e0e0;
-      font-size: 18px;
-    }
-    h1 {
-      text-align: center;
-      font-size: 28px;
-      color: #00bfff;
-    }
-    h2 {
-      text-align: center;
-      font-size: 24px;
-      color: #00bfff;
-    }
-    .status {
-      text-align: center;
-      margin-bottom: 20px;
-      font-weight: bold;
-      padding: 8px 16px;
-      border-radius: 12px;
-      display: inline-block;
-    }
-    .online { background: #4caf50; color: #fff; }
-    .offline { background: #f44336; color: #fff; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power Management</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #121212; color: #e0e0e0; font-size: 18px; }
+  h1 { text-align: center; font-size: 28px; color: #00bfff; position: relative; }
+  .status { text-align: center; margin-bottom: 20px; font-weight: bold; padding: 8px 16px; border-radius: 12px; display: inline-block; }
+  .online { background: #4caf50; color: #fff; }
+  .offline { background: #f44336; color: #fff; }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-    .card {
-      background: #1e1e1e;
-      border-radius: 16px;
-      padding: 16px;
-      text-align: center;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    }
-    .card img {
-      width: 100px; 
-      height: 100px;
-      object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 12px;
-    }
-    .card h3 {
-      margin: 0 0 12px;
-      font-size: 22px;
-      color: #e0e0e0;
-    }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+  .card { background: #1e1e1e; border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+  .card img { width: 100px; height: 100px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 12px; font-size: 22px; color: #e0e0e0; }
+  .toggle { position: relative; display: inline-block; width: 70px; height: 38px; }
+  .toggle input { display:none; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; border-radius: 38px; transition: .4s; }
+  .slider:before { position: absolute; content: ""; height: 30px; width: 30px; left: 4px; bottom: 4px; background-color: white; border-radius: 50%; transition: .4s; }
+  input:checked + .slider { background-color: #4caf50; }
+  input:checked + .slider:before { transform: translateX(32px); }
+  #servos { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
-    .toggle {
-      position: relative;
-      display: inline-block;
-      width: 70px;
-      height: 38px;
-    }
-    .toggle input { display:none; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #555;
-      border-radius: 38px;
-      transition: .4s;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 30px; width: 30px;
-      left: 4px; bottom: 4px;
-      background-color: white;
-      border-radius: 50%;
-      transition: .4s;
-    }
-    input:checked + .slider {
-      background-color: #4caf50;
-    }
-    input:checked + .slider:before {
-      transform: translateX(32px);
-    }
-
-    #servos {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-  </style>
+  /* Reload Button oben rechts */
+  #refreshBtn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 8px;
+    background-color: #00bfff;
+    color: #fff;
+    border: none;
+  }
+</style>
 </head>
 <body>
-  <h1>Power Management</h1>
+  <h1>Power Management
+    <button id="refreshBtn" onclick="manualRefresh()">Reload</button>
+  </h1>
+
   <div style="text-align:center">
     <span id="status" class="status offline">Disconnected</span>
   </div>
@@ -109,138 +52,140 @@
   <h2>Servos</h2>
   <div id="servos"></div>
 
-  <script>
-    const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
+<script>
+  const token = "BmmlidjZqiiEfbddzmnQsp_yuHgGMphX";
+  let togglesEnabled = false;
 
-    let togglesEnabled = false;
+  let servos = [
+    {name:"S1 Kobra", state:0},
+    {name:"H2S", state:0},
+    {name:"ACE Pro 1", state:0},
+    {name:"AMS", state:0},
+    {name:"ACE Pro 2", state:0},
+  ];
 
-    let servos = [
-      {name:"S1 Kobra", state:0},    // Servo 1
-      {name:"H2S", state:0},         // Servo 2
-      {name:"ACE Pro 1", state:0},   // Servo 3
-      {name:"AMS", state:0},         // Servo 4
-      {name:"ACE Pro 2", state:0},   // Servo 5
+  function renderMachines(){
+    const machines = [
+      {name:"S1 Kobra", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/s1_kobra_icon"},
+      {name:"H2S", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/h2s_icon"}
     ];
+    const container = document.getElementById("machines");
+    container.innerHTML = "";
+    machines.forEach((m,idx)=>{
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <img src="${m.img}">
+        <h3>${m.name}</h3>
+        <label class="toggle">
+          <input type="checkbox" ${!togglesEnabled?"disabled":""} onchange="toggleMachine(${idx},this.checked)">
+          <div class="slider"></div>
+        </label>
+      `;
+      container.appendChild(div);
+    });
+    syncMachineStates();
+  }
 
-    function renderMachines(){
-      const machines = [
-        {name:"S1 Kobra", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/s1_kobra_icon"},
-        {name:"H2S", img:"https://raw.githubusercontent.com/hoedii/PrintSpaceServo/91df36cc64b22325bc207f0c3b66ddbeeb08a8a0/h2s_icon"}
-      ];
-      const container = document.getElementById("machines");
-      container.innerHTML = "";
-      machines.forEach((m,idx)=>{
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerHTML = `
-          <img src="${m.img}">
-          <h3>${m.name}</h3>
-          <label class="toggle">
-            <input type="checkbox" ${!togglesEnabled?"disabled":""} onchange="toggleMachine(${idx},this.checked)">
-            <div class="slider"></div>
-          </label>
-        `;
-        container.appendChild(div);
-      });
-      syncMachineStates();
+  function renderServos(){
+    const container = document.getElementById("servos");
+    container.innerHTML = "";
+    servos.forEach((s,i)=>{
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <h3>${s.name}</h3>
+        <label class="toggle">
+          <input type="checkbox" ${s.state?"checked":""} ${!togglesEnabled?"disabled":""} onchange="toggleServo(${i},this.checked)">
+          <div class="slider"></div>
+        </label>
+      `;
+      container.appendChild(div);
+    });
+    syncMachineStates();
+  }
+
+  function syncMachineStates(){
+    const machineInputs = document.querySelectorAll("#machines input");
+    if(machineInputs.length >= 2){
+      machineInputs[0].checked = servos[0].state && servos[2].state && servos[4].state;
+      machineInputs[1].checked = servos[1].state && servos[3].state;
     }
+  }
 
-    function renderServos(){
-      const container = document.getElementById("servos");
-      container.innerHTML = "";
-      servos.forEach((s,i)=>{
-        const div = document.createElement("div");
-        div.className = "card";
-        div.innerHTML = `
-          <h3>${s.name}</h3>
-          <label class="toggle">
-            <input type="checkbox" ${s.state?"checked":""} ${!togglesEnabled?"disabled":""} onchange="toggleServo(${i},this.checked)">
-            <div class="slider"></div>
-          </label>
-        `;
-        container.appendChild(div);
-      });
-      syncMachineStates();
-    }
+  function toggleServo(i,state){
+    servos[i].state = state?1:0;
+    sendCommand("V"+(i+1), servos[i].state);
+    syncMachineStates();
+  }
 
-    function syncMachineStates(){
-      const machineInputs = document.querySelectorAll("#machines input");
-      if(machineInputs.length >= 2){
-        machineInputs[0].checked = servos[0].state && servos[2].state && servos[4].state;
-        machineInputs[1].checked = servos[1].state && servos[3].state;
-      }
-    }
-
-    function toggleServo(i,state){
+  function toggleMachine(index,state){
+    let range = (index===0)?[0,2,4]:[1,3];
+    range.forEach(i=>{
       servos[i].state = state?1:0;
       sendCommand("V"+(i+1), servos[i].state);
-      syncMachineStates();
-    }
+    });
+    renderServos();
+  }
 
-    function toggleMachine(index,state){
-      let range = (index===0)?[0,2,4]:[1,3];
-      range.forEach(i=>{
-        servos[i].state = state?1:0;
-        sendCommand("V"+(i+1), servos[i].state);
-      });
-      renderServos();
-    }
+  function sendCommand(vpin,state){
+    fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`,{mode:"no-cors"});
+  }
 
-    function sendCommand(vpin,state){
-      fetch(`https://blynk.cloud/external/api/update?token=${token}&${vpin}=${state}`,{mode:"no-cors"});
-    }
+  function setTogglesEnabled(enabled){
+    togglesEnabled = enabled;
+    renderMachines();
+    renderServos();
+  }
 
-    function setTogglesEnabled(enabled){
-      togglesEnabled = enabled;
-      renderMachines();
-      renderServos();
-    }
+  function manualRefresh(){
+    fetchStatus();
+    fetchServoPositions();
+  }
 
-    // einmalig beim Laden alle Servo-Werte holen
-    function loadInitialStates(){
-      for(let i=1;i<=5;i++){
-        fetch(`https://blynk.cloud/external/api/get?token=${token}&V${i}`)
-          .then(res=>res.text())
-          .then(val=>{
-            const state = parseInt(val);
-            if(!isNaN(state)){
-              servos[i-1].state = state;
-              renderServos();
-            }
-          })
-          .catch(()=>{});
-      }
-    }
-
-    // nur alle 3 Minuten Verbindungsstatus prüfen
-    function syncFromBlynk(){
-      fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${token}`)
-        .then(r=>r.text())
-        .then(t=>{
-          const status = document.getElementById("status");
-          if(t==="true"){ 
-            status.textContent = "Connected";
-            status.className = "status online";
-            setTogglesEnabled(true);
-          } else {
-            status.textContent = "Disconnected";
-            status.className = "status offline";
-            setTogglesEnabled(false);
-          }
-        })
-        .catch(()=>{
-          const status = document.getElementById("status");
+  function fetchStatus(){
+    fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${token}`)
+      .then(r=>r.text())
+      .then(t=>{
+        const status = document.getElementById("status");
+        if(t==="true"){ 
+          status.textContent = "Connected";
+          status.className = "status online";
+          setTogglesEnabled(true);
+        } else {
           status.textContent = "Disconnected";
           status.className = "status offline";
           setTogglesEnabled(false);
-        });
-    }
+        }
+      })
+      .catch(()=>{
+        const status = document.getElementById("status");
+        status.textContent = "Disconnected";
+        status.className = "status offline";
+        setTogglesEnabled(false);
+      });
+  }
 
-    renderMachines();
-    renderServos();
-    loadInitialStates();
-    syncFromBlynk();
-    setInterval(syncFromBlynk, 180000); // alle 3 Minuten
-  </script>
+  function fetchServoPositions(){
+    for(let i=1;i<=5;i++){
+      fetch(`https://blynk.cloud/external/api/get?token=${token}&V${i}`)
+        .then(res=>res.text())
+        .then(val=>{
+          const state = parseInt(val);
+          if(!isNaN(state)){
+            servos[i-1].state = state;
+            renderServos();
+          }
+        })
+        .catch(()=>{});
+    }
+  }
+
+  renderMachines();
+  renderServos();
+  fetchServoPositions(); // initial einmal laden
+  fetchStatus();        // initial einmal laden
+
+</script>
 </body>
 </html>
