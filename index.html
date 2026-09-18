@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Power">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Power Management</title>
+<link rel="icon" type="image/png" href="power.png">
+<link rel="apple-touch-icon" href="power.png">
+<style>
+  :root {
+    --bg-main: #0d0d0d;
+    --bg-card: #161616;
+    --border-color: #262626;
+    --text-main: #f0f0f0;
+    --text-muted: #888;
+
+    /* Status Colors */
+    --color-red: #ff5252;
+    --bg-red: rgba(244, 67, 54, 0.12);
+    --border-red: rgba(244, 67, 54, 0.25);
+
+    --color-green: #4caf50;
+    --bg-green: rgba(76, 175, 80, 0.12);
+    --border-green: rgba(76, 175, 80, 0.25);
+
+    --color-blue: #00bfff;
+    --bg-blue: rgba(0, 191, 255, 0.12);
+    --border-blue: rgba(0, 191, 255, 0.25);
+
+    --color-gray: #aaa;
+    --bg-gray: rgba(170, 170, 170, 0.12);
+    --border-gray: rgba(170, 170, 170, 0.25);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: calc(20px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom)) 20px;
+    background: var(--bg-main);
+    color: var(--text-main);
+    font-size: 16px;
+  }
+
+  :focus-visible { outline: 2px solid var(--color-blue); outline-offset: 3px; }
+
+  /* --- HEADER & BADGES --- */
+  .header-section {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto 35px auto;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 26px;
+    color: var(--text-main);
+    margin: 0 0 15px 0;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .badge {
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+
+  .badge-offline { background: var(--bg-red); color: var(--color-red); border: 1px solid var(--border-red); }
+  .badge-online  { background: var(--bg-green); color: var(--color-green); border: 1px solid var(--border-green); }
+  .badge-info    { background: var(--bg-blue); color: var(--color-blue); border: 1px solid var(--border-blue); }
+  .badge-neutral { background: var(--bg-gray); color: var(--color-gray); border: 1px solid var(--border-gray); }
+
+  .icon-btn {
+    position: absolute;
+    top: -4px;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-btn:hover { color: var(--text-main); }
+
+  /* --- BUTTONS --- */
+  .btn {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid var(--border-blue);
+    background: var(--bg-blue);
+    color: var(--color-blue);
+    transition: background 0.2s ease, opacity 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { background: rgba(0, 191, 255, 0.25); }
+  .btn.danger  { border-color: var(--border-red);  background: var(--bg-red);  color: var(--color-red); }
+  .btn.danger:active { background: rgba(244, 67, 54, 0.25); }
+  .btn.neutral { border-color: var(--border-gray); background: var(--bg-gray); color: var(--color-gray); }
+  .btn.neutral:active { background: rgba(170, 170, 170, 0.25); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: 800px;
+  }
+
+  .meta {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 14px;
+    min-height: 1.3em;
+  }
+
+  /* --- GRID & CARDS --- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    max-width: 800px;
+    margin: 0 auto 20px auto;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px 15px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .card img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 15px;
+    filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.4));
+  }
+
+  .card h3 {
+    margin: 0 0 15px;
+    font-size: 16px;
+    color: var(--text-main);
+    font-weight: 600;
+  }
+
+  /* --- TOGGLE SCHALTER --- */
+  .toggle {
+    position: relative;
+    display: inline-block;
+    width: 54px;
+    height: 30px;
+    margin-top: auto;
+  }
+
+  .toggle input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    z-index: 1;
+    cursor: pointer;
+  }
+  .toggle input:disabled { cursor: not-allowed; }
+
+  .slider {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333; border-radius: 30px; transition: .4s;
+  }
+
+  .slider:before {
+    position: absolute; content: ""; height: 22px; width: 22px;
+    left: 4px; bottom: 4px; background-color: white; border-radius: 50%;
+    transition: .4s cubic-bezier(0.25, 1, 0.5, 1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  input:checked + .slider { background-color: var(--color-green); }
+  input:checked + .slider:before { transform: translateX(24px); }
+  input:disabled + .slider { opacity: 0.4; }
+  .card.pending input:disabled + .slider { opacity: 0.75; }
+  input:focus-visible + .slider { outline: 2px solid var(--color-blue); outline-offset: 3px; }
+
+  /* --- LICHT STEUERUNG --- */
+  .light-control {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto 30px auto;
+    border: 1px solid var(--border-color);
+  }
+
+  .light-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .light-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
+
+  .premium-track {
+    position: relative;
+    display: flex;
+    background: #080808;
+    border-radius: 30px;
+    padding: 6px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+  }
+
+  .premium-thumb {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: calc((100% - 12px) / 3);
+    border-radius: 25px;
+    transition: transform 0.4s cubic-bezier(0.25, 1.2, 0.5, 1), background-color 0.4s ease;
+    z-index: 1;
+  }
+
+  .premium-step {
+    flex: 1;
+    position: relative;
+    z-index: 2;
+    padding: 12px 0;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: none;
+    border: 0;
+    border-radius: 25px;
+    cursor: pointer;
+    text-align: center;
+    transition: color 0.3s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .premium-track[data-state="0"] .premium-thumb { transform: translateX(0); background: #444; }
+  .premium-track[data-state="1"] .premium-thumb { transform: translateX(100%); background: var(--color-green); }
+  .premium-track[data-state="2"] .premium-thumb { transform: translateX(200%); background: var(--color-blue); }
+
+  .premium-track[data-state="0"] .premium-step:nth-child(2) { color: #fff; }
+  .premium-track[data-state="1"] .premium-step:nth-child(3) { color: #fff; }
+  .premium-track[data-state="2"] .premium-step:nth-child(4) { color: #000; }
+
+  .premium-track.disabled { opacity: 0.3; pointer-events: none; }
+
+  /* --- DIALOGE --- */
+  dialog {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 22px;
+    width: min(92vw, 400px);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+  dialog h2 { margin: 0 0 10px; font-size: 19px; }
+  dialog p { margin: 0 0 16px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+  dialog label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+  dialog input[type="text"] {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text-main);
+    background: #080808;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+  }
+  .dlg-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .err { color: var(--color-red); min-height: 1.2em; margin: 0 0 8px; }
+  dialog p.small { font-size: 12px; margin: 0; }
+
+  /* --- TOASTS --- */
+  #toasts {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 50;
+  }
+  .toast {
+    background: #222;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    max-width: 90vw;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    transition: opacity 0.4s ease;
+  }
+  .toast.error { border-color: var(--border-red); color: var(--color-red); }
+  .toast.out { opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header-section">
+    <h1>Power Management</h1>
+    <span id="main-status" class="badge badge-neutral">Drucker: Lade…</span>
+    <button type="button" class="icon-btn" id="settingsBtn" aria-label="Einstellungen">&#9881;</button>
+  </div>
+
+  <!-- Drucker-Karten -->
+  <div class="grid" id="printers"></div>
+
+  <div class="actions" style="margin-bottom: 30px;">
+    <button type="button" class="btn danger" id="allOff">Alle Drucker aus</button>
+  </div>
+
+  <!-- Licht Steuerung -->
+  <div class="light-control">
+    <div class="light-header">
+      <h3>Licht</h3>
+      <span id="light-status-badge" class="badge badge-neutral">Lade…</span>
+    </div>
+
+    <div class="premium-track disabled" id="lightTrack" data-state="0" role="radiogroup" aria-label="Lichtmodus">
+      <div class="premium-thumb"></div>
+      <button type="button" class="premium-step" role="radio" aria-checked="false" data-v="0">AUS</button>
+      <button type="button" class="premium-step" role="radio" aria-checked="false" data-v="1">AUTO</button>
+      <button type="button" class="premium-step" role="radio" aria-checked="false" data-v="2">IMMER AN</button>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="btn" id="refreshBtn">Status aktualisieren</button>
+  </div>
+  <div class="meta" id="meta" aria-live="off"></div>
+
+  <!-- Bestätigung -->
+  <dialog id="confirmDlg">
+    <form method="dialog">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmText"></p>
+      <div class="dlg-actions">
+        <button class="btn neutral" value="cancel">Abbrechen</button>
+        <button class="btn danger" value="ok" id="confirmOk">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Einstellungen -->
+  <dialog id="settingsDlg">
+    <h2>Einstellungen</h2>
+    <p>Die Tokens liegen nur in diesem Browser. Für ein weiteres Gerät kopierst du den Setup-Link und öffnest ihn dort einmal.</p>
+    <div class="stack">
+      <button type="button" class="btn" id="copyLink">Setup-Link kopieren</button>
+      <button type="button" class="btn neutral" id="editTokens">Tokens ändern</button>
+      <button type="button" class="btn danger" id="logout">Von diesem Gerät entfernen</button>
+      <button type="button" class="btn neutral" id="closeSettings">Schließen</button>
+    </div>
+    <p class="small">Der Link enthält beide Tokens. Behandle ihn wie ein Passwort.</p>
+  </dialog>
+
+  <!-- Token-Setup -->
+  <dialog id="setupDlg">
+    <form id="setupForm">
+      <h2>Zugang einrichten</h2>
+      <p>Trage die beiden Blynk-Tokens ein. Sie werden nur in diesem Browser gespeichert, nicht im Repo.</p>
+      <label>Drucker-Token
+        <input type="text" id="tokP" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </label>
+      <label>Licht-Token
+        <input type="text" id="tokL" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </label>
+      <p class="err" id="setupErr" role="alert"></p>
+      <div class="dlg-actions">
+        <button type="button" class="btn neutral" id="setupCancel">Abbrechen</button>
+        <button type="submit" class="btn">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toasts" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* =========================================================
+   Konfiguration
+   Tokens stehen NICHT im Code. Sie liegen im localStorage
+   des jeweiligen Geräts und werden einmalig per Setup-Link
+   (#p=...&l=...) oder Eingabefeld gesetzt.
+   ========================================================= */
+const API         = "https://blynk.cloud/external/api";
+const POLL_MS     = 20000;    // Abfrageintervall bei geöffnetem Tab
+const POLL_MAX_MS = 120000;   // Obergrenze bei wiederholten Fehlern
+const STORE_KEY   = "powerMgmt.tokens.v1";
+
+const PRINTERS = [
+  { pin: 1, name: "H2C",     img: "H2C.png" },
+  { pin: 2, name: "Kobra X", img: "kobrax.png" },
+  { pin: 3, name: "CC2",     img: "cc2.png" },
+  { pin: 4, name: "K2",      img: "K2.png" },
+  { pin: 5, name: "i10",     img: "i10.png" }
+];
+const LIGHT_PIN    = 6;
+const LIGHT_LABELS = ["Aus", "Auto", "Immer An"];
+const LIGHT_BADGE  = ["badge-neutral", "badge-online", "badge-info"];
+
+const STATUS_TXT = { loading: "Lade…", online: "Online", offline: "Offline", error: "Keine Verbindung", token: "Token ungültig" };
+const STATUS_CLS = { loading: "badge-neutral", online: "badge-online", offline: "badge-offline", error: "badge-offline", token: "badge-offline" };
+
+/* =========================================================
+   Zustand
+   ========================================================= */
+const $  = id => document.getElementById(id);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const enc = encodeURIComponent;
+
+let tokens = null;                       // { p: Drucker-Token, l: Licht-Token }
+const devices = { p: { status: "loading" }, l: { status: "loading" } };
+const state = { printers: {}, light: 0, lastOk: 0 };
+PRINTERS.forEach(p => { state.printers[p.pin] = 0; });
+
+const pending = new Set();               // Pins mit laufendem Schreibvorgang
+let pendingLight = false;
+const lastChange = {};                   // pin -> Zeitpunkt der letzten lokalen Änderung
+
+let pollTimer = null, polling = false, failures = 0, lastPollAt = 0;
+let batchWorks = true;
+const cards = {};
+
+/* =========================================================
+   Tokens (localStorage + Setup-Link)
+   ========================================================= */
+function loadTokens() {
+  try {
+    const t = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (t && t.p && t.l) return t;
+  } catch (e) {}
+  return null;
+}
+function saveTokens(t) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(t)); } catch (e) {}
+}
+function clearTokens() {
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+}
+function tokensFromHash() {
+  const h = location.hash.replace(/^#/, "");
+  if (!h) return null;
+  const q = new URLSearchParams(h);
+  const p = (q.get("p") || "").trim(), l = (q.get("l") || "").trim();
+  return (p && l) ? { p, l } : null;
+}
+const validToken = s => /^[A-Za-z0-9_-]{16,}$/.test(s);
+
+/* =========================================================
+   Blynk-API (bewusst wenige Requests)
+   ========================================================= */
+const httpErr = status => Object.assign(new Error("HTTP " + status), { status });
+
+async function isOnline(token) {
+  const r = await fetch(`${API}/isHardwareConnected?token=${enc(token)}`, { cache: "no-store" });
+  if (!r.ok) throw httpErr(r.status);
+  return (await r.text()).trim() === "true";
+}
+
+// Mehrere Pins in EINEM Request lesen. Fällt auf Einzel-Requests zurück,
+// falls die Batch-Antwort nicht wie erwartet aussieht.
+async function readPins(token, pins) {
+  if (pins.length > 1 && batchWorks) {
+    try {
+      const qs = pins.map(p => "V" + p).join("&");
+      const r = await fetch(`${API}/get?token=${enc(token)}&${qs}`, { cache: "no-store" });
+      if (!r.ok) throw httpErr(r.status);
+      const data = JSON.parse(await r.text());
+      const out = {};
+      for (const [k, v] of Object.entries(data)) {
+        const m = /^v(\d+)$/i.exec(k);
+        const n = parseInt(Array.isArray(v) ? v[0] : v, 10);
+        if (m && !isNaN(n)) out[+m[1]] = n;
+      }
+      if (Object.keys(out).length) return out;
+      throw new SyntaxError("batch");
+    } catch (e) {
+      if (e.status) throw e;
+      if (!(e instanceof SyntaxError)) throw e;
+      batchWorks = false;                // ab jetzt Einzelabfragen
+    }
+  }
+  const out = {};
+  await Promise.all(pins.map(async p => {
+    const r = await fetch(`${API}/get?token=${enc(token)}&V${p}`, { cache: "no-store" });
+    if (!r.ok) throw httpErr(r.status);
+    const n = parseInt(await r.text(), 10);
+    if (!isNaN(n)) out[p] = n;
+  }));
+  return out;
+}
+
+// Mehrere Pins in EINEM Request schreiben. Bei Netzwerk-/CORS-Fehlern
+// wird per Rücklesen geprüft, ob der Befehl trotzdem angekommen ist.
+async function writePins(token, map) {
+  const qs = Object.entries(map).map(([p, v]) => `V${p}=${enc(v)}`).join("&");
+  try {
+    const r = await fetch(`${API}/update?token=${enc(token)}&${qs}`, { cache: "no-store" });
+    if (!r.ok) throw httpErr(r.status);
+  } catch (e) {
+    if (e.status) throw e;
+    const back = await readPins(token, Object.keys(map).map(Number));
+    for (const [p, v] of Object.entries(map)) {
+      if (back[p] !== Number(v)) throw e;
+    }
+  }
+}
+
+const errText = e => (e && (e.status === 400 || e.status === 401))
+  ? "Token ungültig. Bitte in den Einstellungen prüfen."
+  : "Befehl fehlgeschlagen. Keine Verbindung?";
+
+/* =========================================================
+   Rendering (DOM wird einmal gebaut und nur aktualisiert)
+   ========================================================= */
+function buildPrinters() {
+  const grid = $("printers");
+  grid.textContent = "";
+  PRINTERS.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <img src="${p.img}" alt="" loading="lazy" decoding="async">
+      <h3>${p.name}</h3>
+      <label class="toggle">
+        <input type="checkbox" role="switch" aria-label="${p.name} Strom">
+        <span class="slider"></span>
+      </label>`;
+    const input = card.querySelector("input");
+    input.addEventListener("change", () => onTogglePrinter(p, input));
+    grid.appendChild(card);
+    cards[p.pin] = { card, input };
+  });
+}
+
+function renderPrinters() {
+  const online = devices.p.status === "online";
+  let anyOn = false, busy = pending.size > 0;
+  PRINTERS.forEach(p => {
+    const { card, input } = cards[p.pin];
+    const on = !!state.printers[p.pin];
+    anyOn = anyOn || on;
+    input.checked = on;
+    input.disabled = !online || pending.has(p.pin);
+    card.classList.toggle("pending", pending.has(p.pin));
+  });
+  $("allOff").disabled = !online || busy || !anyOn;
+}
+
+function renderLight() {
+  const online = devices.l.status === "online";
+  const track = $("lightTrack");
+  track.classList.toggle("disabled", !online);
+  track.toggleAttribute("inert", !online);
+  track.dataset.state = state.light;
+  $$(".premium-step").forEach(btn => {
+    const sel = +btn.dataset.v === state.light;
+    btn.setAttribute("aria-checked", sel);
+    btn.tabIndex = sel ? 0 : -1;
+  });
+}
+
+function renderStatus() {
+  const dp = devices.p.status;
+  const b = $("main-status");
+  b.textContent = "Drucker: " + STATUS_TXT[dp];
+  b.className = "badge " + STATUS_CLS[dp];
+
+  const dl = devices.l.status;
+  const lb = $("light-status-badge");
+  if (dl === "online") {
+    lb.textContent = LIGHT_LABELS[state.light];
+    lb.className = "badge " + LIGHT_BADGE[state.light];
+  } else {
+    lb.textContent = STATUS_TXT[dl];
+    lb.className = "badge " + STATUS_CLS[dl];
+  }
+}
+
+function ago(ms) {
+  const s = Math.round(ms / 1000);
+  if (s < 5) return "gerade eben";
+  if (s < 60) return `vor ${s} s`;
+  return `vor ${Math.floor(s / 60)} min`;
+}
+function renderMeta() {
+  if (document.hidden) return;
+  const el = $("meta");
+  if (!tokens) { el.textContent = ""; return; }
+  if (polling) { el.textContent = "Aktualisiere…"; return; }
+  let t = state.lastOk ? "Aktualisiert " + ago(Date.now() - state.lastOk) : "";
+  if (failures > 0) t += (t ? ". " : "") + "Verbindungsproblem, neuer Versuch folgt.";
+  el.textContent = t;
+}
+
+function renderAll() {
+  renderPrinters();
+  renderLight();
+  renderStatus();
+  renderMeta();
+  $("refreshBtn").disabled = polling || !tokens;
+}
+
+/* =========================================================
+   Polling
+   ========================================================= */
+async function pollDevice(key, pins, retryToken) {
+  const d = devices[key];
+  if (d.status === "token" && !retryToken) return null;   // ungültiger Token: nicht weiter anfragen
+  try {
+    if (!(await isOnline(tokens[key]))) { d.status = "offline"; return null; }
+    const vals = await readPins(tokens[key], pins);
+    d.status = "online";
+    return vals;
+  } catch (e) {
+    d.status = (e.status === 400 || e.status === 401) ? "token" : "error";
+    return null;
+  }
+}
+
+async function poll(retryToken) {
+  if (!tokens || polling) return;
+  clearTimeout(pollTimer);
+  polling = true;
+  lastPollAt = Date.now();
+  const t0 = lastPollAt;
+  renderAll();
+
+  const [vp, vl] = await Promise.all([
+    pollDevice("p", PRINTERS.map(p => p.pin), retryToken === true),
+    pollDevice("l", [LIGHT_PIN], retryToken === true)
+  ]);
+
+  // Werte nur übernehmen, wenn sie nicht durch eine lokale Änderung überholt wurden
+  if (vp) {
+    PRINTERS.forEach(p => {
+      if (vp[p.pin] === undefined) return;
+      if (pending.has(p.pin) || (lastChange[p.pin] || 0) > t0) return;
+      state.printers[p.pin] = vp[p.pin] ? 1 : 0;
+    });
+  }
+  if (vl && vl[LIGHT_PIN] !== undefined && !pendingLight && (lastChange[LIGHT_PIN] || 0) <= t0) {
+    const v = vl[LIGHT_PIN];
+    if (v >= 0 && v <= 2) state.light = v;
+  }
+
+  polling = false;
+  const hadError = devices.p.status === "error" || devices.l.status === "error";
+  failures = hadError ? failures + 1 : 0;
+  if (!hadError) state.lastOk = Date.now();
+  renderAll();
+  schedule();
+}
+
+function schedule() {
+  clearTimeout(pollTimer);
+  if (document.hidden || !tokens) return;      // im Hintergrund keine Requests
+  const delay = Math.min(POLL_MS * Math.pow(2, failures), POLL_MAX_MS);
+  pollTimer = setTimeout(poll, delay);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { clearTimeout(pollTimer); return; }
+  if (Date.now() - lastPollAt > 5000) poll(); else schedule();
+});
+window.addEventListener("online", () => { failures = 0; poll(); });
+setInterval(renderMeta, 1000);
+
+/* =========================================================
+   Schalten
+   ========================================================= */
+async function setPrinters(map) {
+  const pins = Object.keys(map).map(Number);
+  const prev = {};
+  pins.forEach(pin => {
+    prev[pin] = state.printers[pin];
+    state.printers[pin] = map[pin];
+    pending.add(pin);
+    lastChange[pin] = Date.now();
+  });
+  renderPrinters();
+  try {
+    await writePins(tokens.p, map);
+  } catch (e) {
+    pins.forEach(pin => { state.printers[pin] = prev[pin]; });
+    toast(errText(e), "error");
+    if (e.status === 400 || e.status === 401) { devices.p.status = "token"; renderStatus(); }
+  } finally {
+    pins.forEach(pin => pending.delete(pin));
+    renderPrinters();
+  }
+}
+
+async function onTogglePrinter(p, input) {
+  if (pending.has(p.pin) || devices.p.status !== "online") { renderPrinters(); return; }
+  const want = input.checked ? 1 : 0;
+  if (!want) {
+    const ok = await confirmDialog(`${p.name} ausschalten?`, "Läuft gerade ein Druck, wird er unterbrochen.", "Ausschalten");
+    if (!ok) { renderPrinters(); return; }
+  }
+  setPrinters({ [p.pin]: want });
+}
+
+async function onAllOff() {
+  const map = {};
+  PRINTERS.forEach(p => { if (state.printers[p.pin]) map[p.pin] = 0; });
+  if (!Object.keys(map).length) return;
+  const ok = await confirmDialog("Alle Drucker ausschalten?", "Laufende Drucke werden unterbrochen.", "Alle ausschalten");
+  if (ok) setPrinters(map);
+}
+
+async function setLight(v) {
+  if (devices.l.status !== "online" || pendingLight || v === state.light) return;
+  const prev = state.light;
+  state.light = v;
+  pendingLight = true;
+  lastChange[LIGHT_PIN] = Date.now();
+  renderLight(); renderStatus();
+  try {
+    await writePins(tokens.l, { [LIGHT_PIN]: v });
+  } catch (e) {
+    state.light = prev;
+    toast(errText(e), "error");
+    if (e.status === 400 || e.status === 401) devices.l.status = "token";
+  } finally {
+    pendingLight = false;
+    renderLight(); renderStatus();
+  }
+}
+
+/* =========================================================
+   Dialoge & Toasts
+   ========================================================= */
+function toast(msg, type) {
+  const t = document.createElement("div");
+  t.className = "toast" + (type ? " " + type : "");
+  t.textContent = msg;
+  $("toasts").appendChild(t);
+  setTimeout(() => t.classList.add("out"), 3500);
+  setTimeout(() => t.remove(), 4000);
+}
+
+function confirmDialog(title, text, okLabel) {
+  return new Promise(resolve => {
+    const d = $("confirmDlg");
+    $("confirmTitle").textContent = title;
+    $("confirmText").textContent = text;
+    $("confirmOk").textContent = okLabel;
+    d.returnValue = "";
+    d.addEventListener("close", () => resolve(d.returnValue === "ok"), { once: true });
+    d.showModal();
+  });
+}
+
+function closeOnBackdrop(d) {
+  d.addEventListener("click", e => {
+    const r = d.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
+  });
+}
+closeOnBackdrop($("confirmDlg"));
+closeOnBackdrop($("settingsDlg"));
+
+function openSetup() {
+  $("tokP").value = tokens ? tokens.p : "";
+  $("tokL").value = tokens ? tokens.l : "";
+  $("setupErr").textContent = "";
+  $("setupCancel").hidden = !tokens;
+  $("setupDlg").showModal();
+}
+
+$("setupForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const p = $("tokP").value.trim(), l = $("tokL").value.trim();
+  if (!validToken(p) || !validToken(l)) {
+    $("setupErr").textContent = "Bitte beide Tokens vollständig einfügen (nur Buchstaben, Zahlen, - und _).";
+    return;
+  }
+  tokens = { p, l };
+  saveTokens(tokens);
+  resetRuntime();
+  $("setupDlg").close();
+  renderAll();
+  poll();
+});
+$("setupCancel").addEventListener("click", () => $("setupDlg").close());
+$("setupDlg").addEventListener("cancel", e => { if (!tokens) e.preventDefault(); });
+$("setupDlg").addEventListener("close", () => { if (!tokens) openSetup(); });
+
+$("settingsBtn").addEventListener("click", () => $("settingsDlg").showModal());
+$("closeSettings").addEventListener("click", () => $("settingsDlg").close());
+$("editTokens").addEventListener("click", () => { $("settingsDlg").close(); openSetup(); });
+$("logout").addEventListener("click", () => {
+  $("settingsDlg").close();
+  clearTimeout(pollTimer);
+  clearTokens();
+  tokens = null;
+  resetRuntime();
+  renderAll();
+  openSetup();
+});
+$("copyLink").addEventListener("click", async () => {
+  const link = `${location.origin}${location.pathname}#p=${enc(tokens.p)}&l=${enc(tokens.l)}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    toast("Setup-Link kopiert");
+  } catch (e) {
+    window.prompt("Setup-Link kopieren:", link);
+  }
+  $("settingsDlg").close();
+});
+
+function resetRuntime() {
+  devices.p.status = "loading";
+  devices.l.status = "loading";
+  failures = 0;
+  batchWorks = true;
+  state.lastOk = 0;
+  PRINTERS.forEach(p => { state.printers[p.pin] = 0; });
+  state.light = 0;
+}
+
+/* =========================================================
+   Events & Start
+   ========================================================= */
+$("allOff").addEventListener("click", onAllOff);
+$("refreshBtn").addEventListener("click", () => poll(true));
+
+$$(".premium-step").forEach(btn => btn.addEventListener("click", () => setLight(+btn.dataset.v)));
+$("lightTrack").addEventListener("keydown", e => {
+  const dir = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+  if (!dir) return;
+  e.preventDefault();
+  const v = Math.max(0, Math.min(2, state.light + dir));
+  setLight(v).then(() => { const b = $$(".premium-step")[state.light]; if (b) b.focus(); });
+});
+
+function init() {
+  buildPrinters();
+
+  // Setup-Link: Tokens aus dem Hash übernehmen und Hash sofort aus der URL entfernen
+  const fromHash = tokensFromHash();
+  if (fromHash) {
+    tokens = fromHash;
+    saveTokens(tokens);
+    history.replaceState(null, "", location.pathname + location.search);
+  } else {
+    tokens = loadTokens();
+  }
+
+  renderAll();
+  if (!tokens) { openSetup(); return; }
+  poll();
+}
+
+init();
+})();
+</script>
+</body>
+</html>
