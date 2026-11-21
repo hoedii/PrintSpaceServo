@@ -149,7 +149,7 @@
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 15px;
     max-width: 800px;
-    margin: 0 auto 20px auto;
+    margin: 0 auto 30px auto;
   }
 
   .card {
@@ -218,57 +218,41 @@
   .card.pending input:disabled + .slider { opacity: 0.75; }
   input:focus-visible + .slider { outline: 2px solid var(--color-blue); outline-offset: 3px; }
 
-  /* --- LICHT STEUERUNG --- */
-  .light-control {
-    background: var(--bg-card);
-    border-radius: 16px;
-    padding: 20px;
-    max-width: 800px;
-    margin: 0 auto 30px auto;
-    border: 1px solid var(--border-color);
-  }
-
-  .light-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-
-  .light-header h3 { margin: 0; font-size: 18px; font-weight: 600; }
-
-  .premium-track {
+  /* --- 3-STUFEN SCHALTER IN KARTE (i10) --- */
+  .tri-track {
     position: relative;
     display: flex;
+    width: 100%;
+    margin-top: auto;
     background: #080808;
-    border-radius: 30px;
-    padding: 6px;
-    box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
+    border-radius: 20px;
+    padding: 3px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.6);
   }
 
-  .premium-thumb {
+  .tri-thumb {
     position: absolute;
-    top: 6px;
-    bottom: 6px;
-    left: 6px;
-    width: calc((100% - 12px) / 3);
-    border-radius: 25px;
-    transition: transform 0.4s cubic-bezier(0.25, 1.2, 0.5, 1), background-color 0.4s ease;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 3);
+    border-radius: 17px;
+    transition: transform 0.35s cubic-bezier(0.25, 1.2, 0.5, 1), background-color 0.35s ease;
     z-index: 1;
   }
 
-  .premium-step {
+  .tri-step {
     flex: 1;
     position: relative;
     z-index: 2;
-    padding: 12px 0;
+    padding: 7px 0;
     font: inherit;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     background: none;
     border: 0;
-    border-radius: 25px;
+    border-radius: 17px;
     cursor: pointer;
     text-align: center;
     transition: color 0.3s ease;
@@ -276,15 +260,16 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .premium-track[data-state="0"] .premium-thumb { transform: translateX(0); background: #444; }
-  .premium-track[data-state="1"] .premium-thumb { transform: translateX(100%); background: var(--color-green); }
-  .premium-track[data-state="2"] .premium-thumb { transform: translateX(200%); background: var(--color-blue); }
+  .tri-track[data-state="0"] .tri-thumb { transform: translateX(0); background: #444; }
+  .tri-track[data-state="1"] .tri-thumb { transform: translateX(100%); background: var(--color-green); }
+  .tri-track[data-state="2"] .tri-thumb { transform: translateX(200%); background: var(--color-blue); }
 
-  .premium-track[data-state="0"] .premium-step:nth-child(2) { color: #fff; }
-  .premium-track[data-state="1"] .premium-step:nth-child(3) { color: #fff; }
-  .premium-track[data-state="2"] .premium-step:nth-child(4) { color: #000; }
+  .tri-track[data-state="0"] .tri-step:nth-child(2) { color: #fff; }
+  .tri-track[data-state="1"] .tri-step:nth-child(3) { color: #fff; }
+  .tri-track[data-state="2"] .tri-step:nth-child(4) { color: #000; }
 
-  .premium-track.disabled { opacity: 0.3; pointer-events: none; }
+  .tri-track.disabled { opacity: 0.35; pointer-events: none; }
+  .card.pending .tri-track.disabled { opacity: 0.75; }
 
   /* --- DIALOGE --- */
   dialog {
@@ -358,25 +343,6 @@
   <!-- Drucker-Karten -->
   <div class="grid" id="printers"></div>
 
-  <div class="actions" style="margin-bottom: 30px;">
-    <button type="button" class="btn danger" id="allOff">Alle Drucker aus</button>
-  </div>
-
-  <!-- Licht Steuerung -->
-  <div class="light-control">
-    <div class="light-header">
-      <h3>Licht</h3>
-      <span id="light-status-badge" class="badge badge-neutral">Lade…</span>
-    </div>
-
-    <div class="premium-track disabled" id="lightTrack" data-state="0" role="radiogroup" aria-label="Lichtmodus">
-      <div class="premium-thumb"></div>
-      <button type="button" class="premium-step" role="radio" aria-checked="false" data-v="0">AUS</button>
-      <button type="button" class="premium-step" role="radio" aria-checked="false" data-v="1">AUTO</button>
-      <button type="button" class="premium-step" role="radio" aria-checked="false" data-v="2">IMMER AN</button>
-    </div>
-  </div>
-
   <div class="actions">
     <button type="button" class="btn" id="refreshBtn">Status aktualisieren</button>
   </div>
@@ -397,26 +363,23 @@
   <!-- Einstellungen -->
   <dialog id="settingsDlg">
     <h2>Einstellungen</h2>
-    <p>Die Tokens liegen nur in diesem Browser. Für ein weiteres Gerät kopierst du den Setup-Link und öffnest ihn dort einmal.</p>
+    <p>Der Token liegt nur in diesem Browser. Für ein weiteres Gerät kopierst du den Setup-Link und öffnest ihn dort einmal.</p>
     <div class="stack">
       <button type="button" class="btn" id="copyLink">Setup-Link kopieren</button>
-      <button type="button" class="btn neutral" id="editTokens">Tokens ändern</button>
+      <button type="button" class="btn neutral" id="editTokens">Token ändern</button>
       <button type="button" class="btn danger" id="logout">Von diesem Gerät entfernen</button>
       <button type="button" class="btn neutral" id="closeSettings">Schließen</button>
     </div>
-    <p class="small">Der Link enthält beide Tokens. Behandle ihn wie ein Passwort.</p>
+    <p class="small">Der Link enthält deinen Token. Behandle ihn wie ein Passwort.</p>
   </dialog>
 
   <!-- Token-Setup -->
   <dialog id="setupDlg">
     <form id="setupForm">
       <h2>Zugang einrichten</h2>
-      <p>Trage die beiden Blynk-Tokens ein. Sie werden nur in diesem Browser gespeichert, nicht im Repo.</p>
+      <p>Trage deinen Blynk-Token ein. Er wird nur in diesem Browser gespeichert, nicht im Repo.</p>
       <label>Drucker-Token
         <input type="text" id="tokP" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-      </label>
-      <label>Licht-Token
-        <input type="text" id="tokL" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
       </label>
       <p class="err" id="setupErr" role="alert"></p>
       <div class="dlg-actions">
@@ -434,9 +397,6 @@
 
 /* =========================================================
    Konfiguration
-   Tokens stehen NICHT im Code. Sie liegen im localStorage
-   des jeweiligen Geräts und werden einmalig per Setup-Link
-   (#p=...&l=...) oder Eingabefeld gesetzt.
    ========================================================= */
 const API         = "https://blynk.cloud/external/api";
 const POLL_MS     = 20000;    // Abfrageintervall bei geöffnetem Tab
@@ -448,11 +408,8 @@ const PRINTERS = [
   { pin: 2, name: "Kobra X", img: "kobrax.png" },
   { pin: 3, name: "H3C",     img: "H3C.png" },
   { pin: 5, name: "K2",      img: "K2.png" },
-  { pin: 4, name: "i10",     img: "i10.png" }
+  { pin: 4, name: "i10",     img: "i10.png", triState: true }
 ];
-const LIGHT_PIN    = 6;
-const LIGHT_LABELS = ["Aus", "Auto", "Immer An"];
-const LIGHT_BADGE  = ["badge-neutral", "badge-online", "badge-info"];
 
 const STATUS_TXT = { loading: "Lade…", online: "Online", offline: "Offline", error: "Keine Verbindung", token: "Token ungültig" };
 const STATUS_CLS = { loading: "badge-neutral", online: "badge-online", offline: "badge-offline", error: "badge-offline", token: "badge-offline" };
@@ -461,16 +418,14 @@ const STATUS_CLS = { loading: "badge-neutral", online: "badge-online", offline: 
    Zustand
    ========================================================= */
 const $  = id => document.getElementById(id);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
 const enc = encodeURIComponent;
 
-let tokens = null;                       // { p: Drucker-Token, l: Licht-Token }
-const devices = { p: { status: "loading" }, l: { status: "loading" } };
-const state = { printers: {}, light: 0, lastOk: 0 };
+let tokens = null;                       // { p: Drucker-Token }
+const device = { status: "loading" };
+const state = { printers: {}, lastOk: 0 };
 PRINTERS.forEach(p => { state.printers[p.pin] = 0; });
 
 const pending = new Set();               // Pins mit laufendem Schreibvorgang
-let pendingLight = false;
 const lastChange = {};                   // pin -> Zeitpunkt der letzten lokalen Änderung
 
 let pollTimer = null, polling = false, failures = 0, lastPollAt = 0;
@@ -483,7 +438,7 @@ const cards = {};
 function loadTokens() {
   try {
     const t = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (t && t.p && t.l) return t;
+    if (t && t.p) return { p: t.p };
   } catch (e) {}
   return null;
 }
@@ -497,13 +452,13 @@ function tokensFromHash() {
   const h = location.hash.replace(/^#/, "");
   if (!h) return null;
   const q = new URLSearchParams(h);
-  const p = (q.get("p") || "").trim(), l = (q.get("l") || "").trim();
-  return (p && l) ? { p, l } : null;
+  const p = (q.get("p") || "").trim();
+  return p ? { p } : null;
 }
 const validToken = s => /^[A-Za-z0-9_-]{16,}$/.test(s);
 
 /* =========================================================
-   Blynk-API (bewusst wenige Requests)
+   Blynk-API
    ========================================================= */
 const httpErr = status => Object.assign(new Error("HTTP " + status), { status });
 
@@ -513,8 +468,6 @@ async function isOnline(token) {
   return (await r.text()).trim() === "true";
 }
 
-// Mehrere Pins in EINEM Request lesen. Fällt auf Einzel-Requests zurück,
-// falls die Batch-Antwort nicht wie erwartet aussieht.
 async function readPins(token, pins) {
   if (pins.length > 1 && batchWorks) {
     try {
@@ -533,7 +486,7 @@ async function readPins(token, pins) {
     } catch (e) {
       if (e.status) throw e;
       if (!(e instanceof SyntaxError)) throw e;
-      batchWorks = false;                // ab jetzt Einzelabfragen
+      batchWorks = false;
     }
   }
   const out = {};
@@ -546,8 +499,6 @@ async function readPins(token, pins) {
   return out;
 }
 
-// Mehrere Pins in EINEM Request schreiben. Bei Netzwerk-/CORS-Fehlern
-// wird per Rücklesen geprüft, ob der Befehl trotzdem angekommen ist.
 async function writePins(token, map) {
   const qs = Object.entries(map).map(([p, v]) => `V${p}=${enc(v)}`).join("&");
   try {
@@ -567,7 +518,7 @@ const errText = e => (e && (e.status === 400 || e.status === 401))
   : "Befehl fehlgeschlagen. Keine Verbindung?";
 
 /* =========================================================
-   Rendering (DOM wird einmal gebaut und nur aktualisiert)
+   Rendering
    ========================================================= */
 function buildPrinters() {
   const grid = $("printers");
@@ -575,62 +526,67 @@ function buildPrinters() {
   PRINTERS.forEach(p => {
     const card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = `
-      <img src="${p.img}" alt="" loading="lazy" decoding="async">
-      <h3>${p.name}</h3>
-      <label class="toggle">
-        <input type="checkbox" role="switch" aria-label="${p.name} Strom">
-        <span class="slider"></span>
-      </label>`;
-    const input = card.querySelector("input");
-    input.addEventListener("change", () => onTogglePrinter(p, input));
-    grid.appendChild(card);
-    cards[p.pin] = { card, input };
+
+    if (p.triState) {
+      card.innerHTML = `
+        <img src="${p.img}" alt="" loading="lazy" decoding="async">
+        <h3>${p.name}</h3>
+        <div class="tri-track disabled" data-state="0" role="radiogroup" aria-label="${p.name} Modus">
+          <div class="tri-thumb"></div>
+          <button type="button" class="tri-step" role="radio" aria-checked="false" data-v="0">AUS</button>
+          <button type="button" class="tri-step" role="radio" aria-checked="false" data-v="1">EIN</button>
+          <button type="button" class="tri-step" role="radio" aria-checked="false" data-v="2">AUTO</button>
+        </div>`;
+      const track = card.querySelector(".tri-track");
+      const steps = Array.from(card.querySelectorAll(".tri-step"));
+      steps.forEach(btn => btn.addEventListener("click", () => onTriStatePrinter(p, +btn.dataset.v)));
+      grid.appendChild(card);
+      cards[p.pin] = { card, track, steps };
+    } else {
+      card.innerHTML = `
+        <img src="${p.img}" alt="" loading="lazy" decoding="async">
+        <h3>${p.name}</h3>
+        <label class="toggle">
+          <input type="checkbox" role="switch" aria-label="${p.name} Strom">
+          <span class="slider"></span>
+        </label>`;
+      const input = card.querySelector("input");
+      input.addEventListener("change", () => onTogglePrinter(p, input));
+      grid.appendChild(card);
+      cards[p.pin] = { card, input };
+    }
   });
 }
 
 function renderPrinters() {
-  const online = devices.p.status === "online";
-  let anyOn = false, busy = pending.size > 0;
+  const online = device.status === "online";
   PRINTERS.forEach(p => {
-    const { card, input } = cards[p.pin];
-    const on = !!state.printers[p.pin];
-    anyOn = anyOn || on;
-    input.checked = on;
-    input.disabled = !online || pending.has(p.pin);
-    card.classList.toggle("pending", pending.has(p.pin));
-  });
-  $("allOff").disabled = !online || busy || !anyOn;
-}
+    const entry = cards[p.pin];
+    const val = state.printers[p.pin];
+    const isBusy = pending.has(p.pin);
+    entry.card.classList.toggle("pending", isBusy);
 
-function renderLight() {
-  const online = devices.l.status === "online";
-  const track = $("lightTrack");
-  track.classList.toggle("disabled", !online);
-  track.toggleAttribute("inert", !online);
-  track.dataset.state = state.light;
-  $$(".premium-step").forEach(btn => {
-    const sel = +btn.dataset.v === state.light;
-    btn.setAttribute("aria-checked", sel);
-    btn.tabIndex = sel ? 0 : -1;
+    if (p.triState) {
+      const disabled = !online || isBusy;
+      entry.track.classList.toggle("disabled", disabled);
+      entry.track.toggleAttribute("inert", disabled);
+      entry.track.dataset.state = val;
+      entry.steps.forEach(btn => {
+        const sel = +btn.dataset.v === val;
+        btn.setAttribute("aria-checked", sel);
+        btn.tabIndex = sel ? 0 : -1;
+      });
+    } else {
+      entry.input.checked = !!val;
+      entry.input.disabled = !online || isBusy;
+    }
   });
 }
 
 function renderStatus() {
-  const dp = devices.p.status;
   const b = $("main-status");
-  b.textContent = "Drucker: " + STATUS_TXT[dp];
-  b.className = "badge " + STATUS_CLS[dp];
-
-  const dl = devices.l.status;
-  const lb = $("light-status-badge");
-  if (dl === "online") {
-    lb.textContent = LIGHT_LABELS[state.light];
-    lb.className = "badge " + LIGHT_BADGE[state.light];
-  } else {
-    lb.textContent = STATUS_TXT[dl];
-    lb.className = "badge " + STATUS_CLS[dl];
-  }
+  b.textContent = "Drucker: " + STATUS_TXT[device.status];
+  b.className = "badge " + STATUS_CLS[device.status];
 }
 
 function ago(ms) {
@@ -651,7 +607,6 @@ function renderMeta() {
 
 function renderAll() {
   renderPrinters();
-  renderLight();
   renderStatus();
   renderMeta();
   $("refreshBtn").disabled = polling || !tokens;
@@ -660,16 +615,15 @@ function renderAll() {
 /* =========================================================
    Polling
    ========================================================= */
-async function pollDevice(key, pins, retryToken) {
-  const d = devices[key];
-  if (d.status === "token" && !retryToken) return null;   // ungültiger Token: nicht weiter anfragen
+async function pollDevice(pins, retryToken) {
+  if (device.status === "token" && !retryToken) return null;
   try {
-    if (!(await isOnline(tokens[key]))) { d.status = "offline"; return null; }
-    const vals = await readPins(tokens[key], pins);
-    d.status = "online";
+    if (!(await isOnline(tokens.p))) { device.status = "offline"; return null; }
+    const vals = await readPins(tokens.p, pins);
+    device.status = "online";
     return vals;
   } catch (e) {
-    d.status = (e.status === 400 || e.status === 401) ? "token" : "error";
+    device.status = (e.status === 400 || e.status === 401) ? "token" : "error";
     return null;
   }
 }
@@ -682,26 +636,23 @@ async function poll(retryToken) {
   const t0 = lastPollAt;
   renderAll();
 
-  const [vp, vl] = await Promise.all([
-    pollDevice("p", PRINTERS.map(p => p.pin), retryToken === true),
-    pollDevice("l", [LIGHT_PIN], retryToken === true)
-  ]);
+  const vp = await pollDevice(PRINTERS.map(p => p.pin), retryToken === true);
 
-  // Werte nur übernehmen, wenn sie nicht durch eine lokale Änderung überholt wurden
   if (vp) {
     PRINTERS.forEach(p => {
       if (vp[p.pin] === undefined) return;
       if (pending.has(p.pin) || (lastChange[p.pin] || 0) > t0) return;
-      state.printers[p.pin] = vp[p.pin] ? 1 : 0;
+      if (p.triState) {
+        const v = vp[p.pin];
+        state.printers[p.pin] = (v >= 0 && v <= 2) ? v : 0;
+      } else {
+        state.printers[p.pin] = vp[p.pin] ? 1 : 0;
+      }
     });
-  }
-  if (vl && vl[LIGHT_PIN] !== undefined && !pendingLight && (lastChange[LIGHT_PIN] || 0) <= t0) {
-    const v = vl[LIGHT_PIN];
-    if (v >= 0 && v <= 2) state.light = v;
   }
 
   polling = false;
-  const hadError = devices.p.status === "error" || devices.l.status === "error";
+  const hadError = device.status === "error";
   failures = hadError ? failures + 1 : 0;
   if (!hadError) state.lastOk = Date.now();
   renderAll();
@@ -710,7 +661,7 @@ async function poll(retryToken) {
 
 function schedule() {
   clearTimeout(pollTimer);
-  if (document.hidden || !tokens) return;      // im Hintergrund keine Requests
+  if (document.hidden || !tokens) return;
   const delay = Math.min(POLL_MS * Math.pow(2, failures), POLL_MAX_MS);
   pollTimer = setTimeout(poll, delay);
 }
@@ -740,7 +691,7 @@ async function setPrinters(map) {
   } catch (e) {
     pins.forEach(pin => { state.printers[pin] = prev[pin]; });
     toast(errText(e), "error");
-    if (e.status === 400 || e.status === 401) { devices.p.status = "token"; renderStatus(); }
+    if (e.status === 400 || e.status === 401) { device.status = "token"; renderStatus(); }
   } finally {
     pins.forEach(pin => pending.delete(pin));
     renderPrinters();
@@ -748,7 +699,7 @@ async function setPrinters(map) {
 }
 
 async function onTogglePrinter(p, input) {
-  if (pending.has(p.pin) || devices.p.status !== "online") { renderPrinters(); return; }
+  if (pending.has(p.pin) || device.status !== "online") { renderPrinters(); return; }
   const want = input.checked ? 1 : 0;
   if (!want) {
     const ok = await confirmDialog(`${p.name} ausschalten?`, "Läuft gerade ein Druck, wird er unterbrochen.", "Ausschalten");
@@ -757,31 +708,9 @@ async function onTogglePrinter(p, input) {
   setPrinters({ [p.pin]: want });
 }
 
-async function onAllOff() {
-  const map = {};
-  PRINTERS.forEach(p => { if (state.printers[p.pin]) map[p.pin] = 0; });
-  if (!Object.keys(map).length) return;
-  const ok = await confirmDialog("Alle Drucker ausschalten?", "Laufende Drucke werden unterbrochen.", "Alle ausschalten");
-  if (ok) setPrinters(map);
-}
-
-async function setLight(v) {
-  if (devices.l.status !== "online" || pendingLight || v === state.light) return;
-  const prev = state.light;
-  state.light = v;
-  pendingLight = true;
-  lastChange[LIGHT_PIN] = Date.now();
-  renderLight(); renderStatus();
-  try {
-    await writePins(tokens.l, { [LIGHT_PIN]: v });
-  } catch (e) {
-    state.light = prev;
-    toast(errText(e), "error");
-    if (e.status === 400 || e.status === 401) devices.l.status = "token";
-  } finally {
-    pendingLight = false;
-    renderLight(); renderStatus();
-  }
+function onTriStatePrinter(p, want) {
+  if (pending.has(p.pin) || device.status !== "online" || state.printers[p.pin] === want) return;
+  setPrinters({ [p.pin]: want });
 }
 
 /* =========================================================
@@ -819,7 +748,6 @@ closeOnBackdrop($("settingsDlg"));
 
 function openSetup() {
   $("tokP").value = tokens ? tokens.p : "";
-  $("tokL").value = tokens ? tokens.l : "";
   $("setupErr").textContent = "";
   $("setupCancel").hidden = !tokens;
   $("setupDlg").showModal();
@@ -827,12 +755,12 @@ function openSetup() {
 
 $("setupForm").addEventListener("submit", e => {
   e.preventDefault();
-  const p = $("tokP").value.trim(), l = $("tokL").value.trim();
-  if (!validToken(p) || !validToken(l)) {
-    $("setupErr").textContent = "Bitte beide Tokens vollständig einfügen (nur Buchstaben, Zahlen, - und _).";
+  const p = $("tokP").value.trim();
+  if (!validToken(p)) {
+    $("setupErr").textContent = "Bitte den Token vollständig einfügen (nur Buchstaben, Zahlen, - und _).";
     return;
   }
-  tokens = { p, l };
+  tokens = { p };
   saveTokens(tokens);
   resetRuntime();
   $("setupDlg").close();
@@ -856,7 +784,7 @@ $("logout").addEventListener("click", () => {
   openSetup();
 });
 $("copyLink").addEventListener("click", async () => {
-  const link = `${location.origin}${location.pathname}#p=${enc(tokens.p)}&l=${enc(tokens.l)}`;
+  const link = `${location.origin}${location.pathname}#p=${enc(tokens.p)}`;
   try {
     await navigator.clipboard.writeText(link);
     toast("Setup-Link kopiert");
@@ -867,34 +795,21 @@ $("copyLink").addEventListener("click", async () => {
 });
 
 function resetRuntime() {
-  devices.p.status = "loading";
-  devices.l.status = "loading";
+  device.status = "loading";
   failures = 0;
   batchWorks = true;
   state.lastOk = 0;
   PRINTERS.forEach(p => { state.printers[p.pin] = 0; });
-  state.light = 0;
 }
 
 /* =========================================================
    Events & Start
    ========================================================= */
-$("allOff").addEventListener("click", onAllOff);
 $("refreshBtn").addEventListener("click", () => poll(true));
-
-$$(".premium-step").forEach(btn => btn.addEventListener("click", () => setLight(+btn.dataset.v)));
-$("lightTrack").addEventListener("keydown", e => {
-  const dir = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
-  if (!dir) return;
-  e.preventDefault();
-  const v = Math.max(0, Math.min(2, state.light + dir));
-  setLight(v).then(() => { const b = $$(".premium-step")[state.light]; if (b) b.focus(); });
-});
 
 function init() {
   buildPrinters();
 
-  // Setup-Link: Tokens aus dem Hash übernehmen und Hash sofort aus der URL entfernen
   const fromHash = tokensFromHash();
   if (fromHash) {
     tokens = fromHash;
